@@ -40,7 +40,6 @@ import net.minecraft.network.chat.Component;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -604,18 +603,12 @@ public class OpsecConfigScreen extends Screen {
     
     private void openImportDialog() {
         new Thread(() -> {
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                PointerBuffer filters = stack.mallocPointer(1);
-                filters.put(stack.UTF8("*.json"));
-                filters.flip();
-                
-                String result = TinyFileDialogs.tinyfd_openFileDialog(
-                    "Import Accounts",
-                    "",
-                    filters,
-                    "JSON Files (*.json)",
-                    false
-                );
+            try {
+                java.awt.FileDialog dialog = new java.awt.FileDialog((java.awt.Frame) null, "Import Accounts", java.awt.FileDialog.LOAD);
+                dialog.setFilenameFilter((d, n) -> n.toLowerCase().endsWith(".json"));
+                dialog.setVisible(true);
+                String result = (dialog.getDirectory() == null || dialog.getFile() == null)
+                        ? null : new File(dialog.getDirectory(), dialog.getFile()).getPath();
                 
                 if (result == null) return;
                 
@@ -630,7 +623,7 @@ public class OpsecConfigScreen extends Screen {
                     }
                     refreshScreen();
                 });
-            } catch (Exception e) {
+            } catch (Exception | LinkageError e) {
                 Opsec.LOGGER.error("[OpSec] Failed to import accounts: {}", e.getMessage());
             }
         }, "OpSec-Import-Thread").start();
@@ -638,17 +631,12 @@ public class OpsecConfigScreen extends Screen {
     
     private void openExportDialog() {
         new Thread(() -> {
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                PointerBuffer filters = stack.mallocPointer(1);
-                filters.put(stack.UTF8("*.json"));
-                filters.flip();
-                
-                String result = TinyFileDialogs.tinyfd_saveFileDialog(
-                    "Export Accounts",
-                    "opsec-accounts-export.json",
-                    filters,
-                    "JSON Files (*.json)"
-                );
+            try {
+                java.awt.FileDialog dialog = new java.awt.FileDialog((java.awt.Frame) null, "Export Accounts", java.awt.FileDialog.SAVE);
+                dialog.setFile("opsec-accounts-export.json");
+                dialog.setVisible(true);
+                String result = (dialog.getDirectory() == null || dialog.getFile() == null)
+                        ? null : new File(dialog.getDirectory(), dialog.getFile()).getPath();
                 
                 if (result == null) return;
                 
@@ -662,7 +650,7 @@ public class OpsecConfigScreen extends Screen {
                     StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
                     
                 Opsec.LOGGER.info("[OpSec] Exported accounts to {}", file.getPath());
-            } catch (Exception e) {
+            } catch (Exception | LinkageError e) {
                 Opsec.LOGGER.error("[OpSec] Failed to export accounts: {}", e.getMessage());
             }
         }, "OpSec-Export-Thread").start();
