@@ -1,0 +1,22 @@
+name: Build 26.3
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - run: chmod +x gradlew && ./gradlew :26.3:build
+      - name: List authlib classes (debug)
+        if: always()
+        run: |
+          for j in $(find ~/.gradle -name 'authlib*.jar' ! -name '*sources*' | head -3); do
+            echo "== $j"; unzip -l "$j" | grep -E 'authlib/(services|yggdrasil|minecraft)/[A-Za-z]+\.class' | awk '{print $4}'
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opsec-26.3
+          path: versions/26.3/build/libs/*.jar
